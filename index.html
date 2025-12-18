@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love Loop Clear</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050002;
+            /* Hitam pekat */
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* BACKGROUND LOOP */
+        #loopCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            opacity: 0.8;
+            /* Opacity dinaikkan agar tulisan lebih terang */
+            pointer-events: none;
+        }
+
+        /* THREE.JS HEART */
+        #threeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* OVERLAY (TOMBOL START) */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 0, 2, 0.98);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 0.8s ease;
+        }
+
+        #overlay h1 {
+            color: #ff69b4;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            border-right: 3px solid #ff69b4;
+            animation: blink-caret .75s step-end infinite;
+            pointer-events: none;
+            text-shadow: 0 0 10px #ff69b4;
+            /* Efek Glow */
+        }
+
+        #overlay p {
+            color: #ffb6c1;
+            font-size: 14px;
+            margin-top: 25px;
+            padding: 10px 25px;
+            border: 2px solid #ff69b4;
+            border-radius: 5px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            animation: pulse 1.5s infinite;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+
+        @keyframes blink-caret {
+
+            from,
+            to {
+                border-color: transparent
+            }
+
+            50% {
+                border-color: #ff69b4;
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 15px #ff69b4;
+            }
+        }
+
+        svg {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="overlay" onclick="startExperience()">
+        <h1>&gt; SYSTEM READY...</h1>
+        <p>TAP SCREEN TO START</p>
+    </div>
+
+    <canvas id="loopCanvas"></canvas>
+
+    <audio id="bgMusic" loop>
+        <source src="she.mp3" type="audio/mpeg">
+    </audio>
+
+    <svg viewBox="0 0 600 552">
+        <path d="M293.247,536.035l-26.273-24.116C159.27,414.225,87.054,349.563,87.054,258.91
+        c0-67.923,54.685-122.608,122.608-122.608c35.215,0,67.652,14.77,90.473,38.169
+        c22.821-23.399,55.258-38.169,90.473-38.169c67.923,0,122.608,54.685,122.608,122.608
+        c0,90.653-72.216,155.315-179.92,253.009L293.247,536.035z" />
+    </svg>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        console.clear();
+
+        /* 1. START FUNCTION */
+        let hasStarted = false;
+
+        function startExperience() {
+            if (hasStarted) return;
+            hasStarted = true;
+
+            const overlay = document.getElementById('overlay');
+            const audio = document.getElementById('bgMusic');
+            const title = overlay.querySelector('h1');
+            const btn = overlay.querySelector('p');
+
+            title.innerText = "ACCESS GRANTED";
+            title.style.color = "#fff";
+            title.style.textShadow = "0 0 20px #fff";
+            title.style.borderColor = "transparent";
+            btn.style.display = "none";
+
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                document.getElementById('threeCanvas').style.pointerEvents = "auto";
+                setTimeout(() => { overlay.style.display = 'none'; }, 800);
+            }, 500);
+
+            audio.play().catch(e => console.log("Audio waiting for interaction"));
+        }
+
+        /* 2. TEXT LOOP (CLEAN & BRIGHT) */
+        const c = document.getElementById("loopCanvas");
+        const ctx = c.getContext("2d");
+        let w, h, centerX, centerY;
+
+        function resizeCanvas() {
+            w = c.width = window.innerWidth;
+            h = c.height = window.innerHeight;
+            centerX = w / 2;
+            centerY = h / 2;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function getHeartPoint(t, scale) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+            return { x: x * scale, y: y * scale };
+        }
+
+        // KONFIGURASI TEKS (TANPA EMOTICON, DIGANTI SPASI)
+        const loops = [
+            // Text: Teks bersih dengan spasi
+            { scale: 15, speed: 0.003, text: "I LOVE YOU   FOREVER   ", chars: [] },
+            { scale: 25, speed: 0.002, text: "MY LOVE   MY LOVE   ", chars: [] },
+            { scale: 35, speed: 0.001, text: "ALWAYS   TOGETHER   ", chars: [] }
+        ];
+
+        loops.forEach((loop) => {
+            const totalChars = 40;
+            for (let i = 0; i < totalChars; i++) {
+                loop.chars.push({
+                    char: loop.text[i % loop.text.length],
+                    t: (i / totalChars) * Math.PI * 2
+                });
+            }
+        });
+
+        function drawLoops() {
+            // Background trail sedikit lebih gelap agar teks kontras
+            ctx.fillStyle = "rgba(5, 0, 2, 0.15)";
+            ctx.fillRect(0, 0, w, h);
+
+            // FONT SETUP: BOLD & UKURAN BESAR
+            ctx.font = "bold 16px 'Courier New'";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            loops.forEach((loop, loopIndex) => {
+                // Warna Pink Cerah
+                const color = `rgb(255, ${80 + loopIndex * 40}, ${180 + loopIndex * 20})`;
+                ctx.fillStyle = color;
+
+                // EFEK GLOW (CAHAYA) AGAR TULISAN JELAS
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = color;
+
+                loop.chars.forEach((p) => {
+                    p.t += loop.speed;
+                    if (p.t > Math.PI * 2) p.t -= Math.PI * 2;
+                    const pos = getHeartPoint(p.t, loop.scale);
+                    ctx.fillText(p.char, centerX + pos.x, centerY + pos.y);
+                });
+            });
+
+            // Reset shadow agar tidak berat render
+            ctx.shadowBlur = 0;
+        }
+        setInterval(drawLoops, 30);
+
+        /* 3. THREE.JS PARTICLES */
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050002, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.z = 500;
+        camera.position.y = -50;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.domElement.id = "threeCanvas";
+        renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        document.body.appendChild(renderer.domElement);
+
+        const controlsWebGL = new THREE.OrbitControls(camera, renderer.domElement);
+        controlsWebGL.enableDamping = true;
+        controlsWebGL.dampingFactor = 0.05;
+        controlsWebGL.autoRotate = true;
+        controlsWebGL.autoRotateSpeed = 2.0;
+
+        const tl = gsap.timeline({ repeat: -1, yoyo: true });
+        const path = document.querySelector("path");
+        const length = path.getTotalLength();
+        const vertices = [];
+
+        for (let i = 0; i < length; i += 0.2) {
+            const point = path.getPointAtLength(i);
+            const vector = new THREE.Vector3(point.x, -point.y, 0);
+            vector.x += (Math.random() - 0.5) * 30;
+            vector.y += (Math.random() - 0.5) * 30;
+            vector.z += (Math.random() - 0.5) * 70;
+            vertices.push(vector);
+
+            tl.from(vector, {
+                x: 600 / 2, y: -552 / 2, z: 0,
+                ease: "power2.inOut", duration: "random(2, 5)"
+            }, i * 0.0005);
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(vertices);
+        const material = new THREE.PointsMaterial({
+            color: 0xff1493,
+            blending: THREE.AdditiveBlending,
+            size: 3,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        particles.position.x -= 600 / 2;
+        particles.position.y += 552 / 2;
+        scene.add(particles);
+
+        gsap.fromTo(scene.rotation, { y: -0.2 }, { y: 0.2, repeat: -1, yoyo: true, ease: 'power2.inOut', duration: 3 });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeCanvas();
+        });
+
+        function render() {
+            requestAnimationFrame(render);
+            geometry.setFromPoints(vertices);
+            controlsWebGL.update();
+            renderer.render(scene, camera);
+        }
+        render();
+
+    </script>
+</body>
+
+</html>
